@@ -52,7 +52,7 @@ export function streamToBus(proto, connection, stream, q) {
             console.log(msg)
             const peer = '/p2p/' + connection.remotePeer.toString()
             q.enq({proto, peer, data: msg.value})
-            console.log("put on bus: ", msg.value)
+            console.log("put on bus: ", {proto: proto, peer: peer, data: msg.value})
         }
     )
 }

@@ -43,38 +43,45 @@ class Net {
 
     // connect to peers from peerDB
     //   on ann/peer, add it
-    async listen_net(node) {
+    async listen_net() {
+        const id = await createFromJSON(peerIdListenerJson)
+        this.p2p = await createLibp2p({
+            peerId: id,
+            addresses: {
+                listen: ['/ip4/0.0.0.0/tcp/10333']
+            }
+        })
 
         // Log a message when a remote peer connects to us
-        node.connectionManager.addEventListener('peer:connect', (evt) => {
+        this.p2p.connectionManager.addEventListener('peer:connect', (evt) => {
             const connection = evt.detail
             console.log('connected to: ', connection.remotePeer.toString())
         })
 
         // Handle messages for the protocol
-        await node.handle('/req/1.0.0', async ({ connection, stream }) => {
+        await this.p2p.handle('/req/1.0.0', async ({ connection, stream }) => {
             // Send stdin to the stream
             streamToBus('/req/1.0.0', connection, stream, this.iq)
         })
 
         // Start listening
-        await node.start()
+        await this.p2p.start()
 
         // Output listen addresses to the console
         console.log('Listener ready, listening on:')
-        node.getMultiaddrs().forEach((ma) => {
+        this.p2p.getMultiaddrs().forEach((ma) => {
             console.log(ma.toString())
         })
     }
 
-    async write_peer(node, msg) {
+    async write_peer(msg) {
         const peer = new Multiaddr(msg.peer)
-        const {stream} = await node.dialProtocol(peer, msg.proto)
+        const {stream} = await this.p2p.dialProtocol(peer, msg.proto)
         stringToStream(msg.data.toString(), stream)
     }
 
     // TODO this will fail when bus gets big
-    async flush_bus(node) {
+    async flush_bus() {
         let msg
         while ((msg = this.oq.deq()) != null) {
 
@@ -89,13 +96,13 @@ class Net {
                     let peersCopy = JSON.parse(JSON.stringify(this.peers))
                     for (let i = 0; i < peersCopy.length; i++) {
                         msg.peer = peersCopy[i]
-                        await this.write_peer(node, msg)
+                        await this.write_peer(msg)
                     }
                     break
                 }
                 case '/res/1.0.0': {
-                    console.log("RES")
-                    await this.write_peer(node, msg)
+                    console.log("RES", msg)
+                    await this.write_peer(msg)
                     break
                 }
                 case '/end/1.0.0': {
@@ -114,19 +121,9 @@ class Net {
         }
     }
 
-    async start() {
-        // Create a new libp2p node with the given multi-address
-        const id = await createFromJSON(peerIdListenerJson)
-        const node = await createLibp2p({
-            peerId: id,
-            addresses: {
-                listen: ['/ip4/0.0.0.0/tcp/10333']
-            }
-        })
-
-        await this.listen_net(node)
+    start() {
         setInterval(async () => {
-            this.flush_bus(node)
+            this.flush_bus()
         }, 1000)
 
         // for each peer
@@ -140,8 +137,10 @@ class Net {
         //     msg.from.send(msg)
     }
 
-    async poll() {
-        return this.iq.deq()
+    async *poll() {
+        while (true) {
+            yield this.iq.deq()
+        }
     }
 }
 
@@ -152,8 +151,9 @@ class Eng {
         this.state = null
     }
     step(msg) {
-        this.log.push(msg)
-        let [next, outs] = this.turn(this.state, msg)
+        console.log("STEP", msg)
+        this.log.push(msg.value)
+        let [next, outs] = this.turn(this.state, msg.value)
         this.state = next
         return outs
     }
@@ -176,15 +176,22 @@ class Node {
         this.net = new Net(peers)
         this.eng = new Eng()
     }
-    async run() {
+    run() {
         this.net.start()
-        setInterval(async () => {
-            let msg = await this.net.poll()
-            let outs = this.eng.step(msg)
-            for (let out of outs) {
-                this.net.oq.enq(out)
-            }
-        }, 1000)
+        const poller = this.net.poll()
+        setInterval(
+            async () => {
+                const msg = await poller.next()
+                if (msg.value == null) {
+                    return
+                }
+                const outs = this.eng.step(msg)
+                for (let out of outs) {
+                    this.net.oq.enq(out)
+                }
+            },
+            1000
+        )
     }
     repr() {
         return [
@@ -194,7 +201,10 @@ class Node {
     }
 }
 
+// Create a new libp2p node with the given multi-address
+
 const node = new Node([])
-await node.run()
+await node.net.listen_net()
+node.run()
 // emit a block every 60s
 //setInterval(async () => {node.step()}, 1000)
