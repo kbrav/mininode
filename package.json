@@ -1,0 +1,33 @@
+{
+  "name": "mininode",
+  "version": "1.0.0",
+  "main": "node.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kbrav/mininode.git"
+  },
+  "author": "",
+  "type": "module",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kbrav/mininode/issues"
+  },
+  "homepage": "https://github.com/kbrav/mininode#readme",
+  "dependencies": {
+    "@chainsafe/libp2p-noise": "^6.2.0",
+    "@libp2p/interfaces": "^2.0.2",
+    "@libp2p/mplex": "^1.1.0",
+    "@libp2p/tcp": "^1.0.11",
+    "@libp2p/websockets": "^1.0.9",
+    "@multiformats/multiaddr": "^10.1.8",
+    "@nodeutils/defaults-deep": "^1.1.0",
+    "libp2p": "^0.37.1"
+  },
+  "devDependencies": {
+    "mocha": "^9.2.2"
+  },
+  "description": ""
+}
