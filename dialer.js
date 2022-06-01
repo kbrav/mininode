@@ -9,6 +9,11 @@ import peerIdListenerJson from './peer-id-listener.js'
 import map from "it-map";
 import * as lp from "it-length-prefixed";
 import {pipe} from 'it-pipe'
+import {sendTransaction} from './tx.js'
+
+async function sendRawTransaction(data) {
+
+}
 
 async function run () {
   const [idDialer, idListener] = await Promise.all([
@@ -34,10 +39,11 @@ async function run () {
   })
 
   // Dial to the remote peer (the "listener")
+  //const listenerMa = new Multiaddr(`/ip4/127.0.0.1/tcp/10333/p2p/${idListener.toString()}`)
   const listenerMa = new Multiaddr(`/ip4/127.0.0.1/tcp/10333/p2p/${idListener.toString()}`)
-  const { stream } = await nodeDialer.dialProtocol(listenerMa, '/req/1.0.0')
+  const { stream } = await nodeDialer.dialProtocol(listenerMa, '/cash/1.0.0')
 
-  console.log('Dialer dialed to listener on protocol: /req/1.0.0')
+  console.log('Dialer dialed to listener on protocol: /cash/1.0.0')
   console.log('Type a message and see what happens')
 
   stringToStream("kbrav\\n", stream)
