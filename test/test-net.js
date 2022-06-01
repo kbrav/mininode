@@ -15,6 +15,13 @@ describe('net', () => {
     })
 
     it('basic', async () => {
-        want(1).to.eql(2)
+    })
+
+    describe('ann/tx', () => {
+        it('empty', async () => {
+            console.log(ali.p2p.peerId)
+            console.log(bob.p2p.peerId)
+            ali.send([["ann/tx", []]])
+        })
     })
 })

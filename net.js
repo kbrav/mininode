@@ -46,9 +46,7 @@ export class Net {
     // connect to peers from peerDB
     //   on ann/peer, add it
     async listen_net(port) {
-        const id = await createFromJSON(peerIdListenerJson)
         this.p2p = await createLibp2p({
-            peerId: id,
             addresses: {
                 listen: ['/ip4/0.0.0.0/tcp/' + port]
             }
@@ -145,5 +143,9 @@ export class Net {
         while (true) {
             yield this.iq.deq()
         }
+    }
+
+    send(mail) {
+        this.oq.enq(mail)
     }
 }
